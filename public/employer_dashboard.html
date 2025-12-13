@@ -190,15 +190,13 @@
       <td>${a.jobId?.title || 'Deleted Job'}</td>
       <td>${a.studentName}</td>
       <td>${a.studentEmail}</td>
-
       <td>
         ${
-          <a href="${a.resume}?fl_attachment" class="btn btn-sm btn-primary">
-            Download
-          </a>
-        }
-      </td>
-
+            a.resume
+            ? `<a href="${a.resume}?fl_attachment" target="_blank" class="btn btn-sm btn-primary">Download</a>`
+            : 'No resume'
+          }
+        </td>
       <td>
         <span class="badge ${
           a.status === 'accepted'
