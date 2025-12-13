@@ -10,7 +10,6 @@ console.log("Cloudinary ENV:", {
   key: !!process.env.CLOUDINARY_API_KEY,
   secret: !!process.env.CLOUDINARY_API_SECRET,
 });
-console.log("PDF URL:", req.file.path);
 
 
 console.log("ENV CHECK:", {
@@ -455,6 +454,8 @@ app.post(
 
   async (req, res) => {
     console.log("FILE OBJECT:", req.file);
+    console.log("PDF URL:", req.file.path);
+
 
     const { jobId, fullName, phoneNumber } = req.body;
 
