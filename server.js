@@ -140,7 +140,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "joblinker_resumes",
-    resource_type: "raw",   // REQUIRED for PDFs
+    resource_type: "image",  // REQUIRED for PDFs
     format: "pdf",
     public_id: (req, file) =>
       Date.now() + "-" + file.originalname.replace(/\s+/g, "_"),
