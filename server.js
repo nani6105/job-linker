@@ -259,18 +259,18 @@ app.post("/api/employer/login", async (req, res) => {
 });
 
 // ----------------- Admin Login -----------------
-app.post("/api/admin/login", async (req, res) => {
-  const { email, password } = req.body;
+app.get("/create-admin", async (req, res) => {
+  const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  const user = await User.findOne({ email, role: "admin" });
-  if (!user) return alertAndRedirect(res, "Invalid credentials.", "/admin_login.html");
+  await User.create({
+    email: "admin@gmail.com",
+    password: hashedPassword,
+    role: "admin",
+  });
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return alertAndRedirect(res, "Invalid credentials.", "/admin_login.html");
-
-  req.session.user = { _id: user._id, email, role: "admin" };
-  alertAndRedirect(res, "Admin login successful!", "/admin_dashboard.html");
+  res.send("Admin created");
 });
+
 
 // ----------------- Get Current Session User -----------------
 app.get("/api/me", (req, res) => {
