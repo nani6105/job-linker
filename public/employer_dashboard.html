@@ -185,21 +185,41 @@
           return;
         }
         container.innerHTML = apps.map(a => {
-          const resumeHref = a.resume ? ('/' + a.resume.replace(/^\/+/, '')) : '#';
-          return `
-            <tr>
-              <td>${a.jobId?.title || 'Deleted Job'}</td>
-              <td>${a.studentName}</td>
-              <td>${a.studentEmail}</td>
-              <td>${a.resume ? `<a href="${resumeHref}" class="btn btn-sm btn-primary" download>Download</a>` : 'No resume'}</td>
-              <td><span class="badge ${a.status==='accepted'?'bg-success':a.status==='rejected'?'bg-danger':'bg-secondary'} status-badge">${a.status}</span></td>
-              <td>
-                ${a.status==='pending'?`<button class="btn btn-sm btn-success" onclick="updateStatus('${a._id}','accepted')">Accept</button>
-                <button class="btn btn-sm btn-danger" onclick="updateStatus('${a._id}','rejected')">Reject</button>`:''}
-              </td>
-            </tr>
-          `;
-        }).join('');
+  return `
+    <tr>
+      <td>${a.jobId?.title || 'Deleted Job'}</td>
+      <td>${a.studentName}</td>
+      <td>${a.studentEmail}</td>
+      <td>
+        ${a.resume 
+          ? `<a href="${a.resume}" target="_blank" class="btn btn-sm btn-primary">
+               Download
+             </a>`
+          : 'No resume'}
+      </td>
+      <td>
+        <span class="badge ${
+          a.status === 'accepted'
+            ? 'bg-success'
+            : a.status === 'rejected'
+            ? 'bg-danger'
+            : 'bg-secondary'
+        } status-badge">
+          ${a.status}
+        </span>
+      </td>
+      <td>
+        ${
+          a.status === 'pending'
+            ? `<button class="btn btn-sm btn-success" onclick="updateStatus('${a._id}','accepted')">Accept</button>
+               <button class="btn btn-sm btn-danger" onclick="updateStatus('${a._id}','rejected')">Reject</button>`
+            : ''
+        }
+      </td>
+    </tr>
+  `;
+}).join('');
+
       } catch (err) { console.error(err); }
     }
 
