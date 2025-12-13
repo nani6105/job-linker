@@ -95,7 +95,7 @@ app.get('/', (req, res) =>
 // =======================
 // 6. Session Configuration
 // =======================
-const MongoStore = require("connect-mongo")(session);
+const MongoStore = require("connect-mongo");
 
 app.use(
   session({
@@ -103,11 +103,13 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: new MongoStore({
+
+    store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       collectionName: "sessions",
       ttl: 24 * 60 * 60, // 1 day
     }),
+
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -116,9 +118,6 @@ app.use(
     },
   })
 );
-
-
-
 
 // =======================
 // 7. Multer (Resume Upload)
