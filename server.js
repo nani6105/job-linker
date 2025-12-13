@@ -5,6 +5,13 @@
 // ===================================================
 require("dotenv").config();
 
+console.log("Cloudinary ENV:", {
+  name: !!process.env.CLOUDINARY_CLOUD_NAME,
+  key: !!process.env.CLOUDINARY_API_KEY,
+  secret: !!process.env.CLOUDINARY_API_SECRET,
+});
+
+
 console.log("ENV CHECK:", {
   mongo: !!process.env.MONGODB_URI,
   email: !!process.env.EMAIL_USER,
@@ -15,7 +22,6 @@ console.log("ENV CHECK:", {
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const fs = require("fs");
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
@@ -97,34 +103,40 @@ app.use(
     saveUninitialized: false,
     proxy: true, // 🔥 REQUIRED for Render
     cookie: {
-      secure: true,        // Render is HTTPS
-      sameSite: "none",    // 🔥 REQUIRED
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 2,
     },
   })
 );
-// =======================
-// CREATE UPLOADS FOLDER (RENDER FIX)
-// =======================
-const uploadDir = path.join(__dirname, "uploads");
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
 
 // =======================
 // 7. Multer (Resume Upload)
 // =======================
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir); // ✅ correct
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ✅ FINAL STORAGE (Render-safe)
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "joblinker_resumes",
+    resource_type: "raw",   // REQUIRED for PDFs
+    format: "pdf",
+    public_id: (req, file) =>
+      Date.now() + "-" + file.originalname.replace(/\s+/g, "_"),
   },
 });
 
+// ✅ FINAL UPLOAD
 const upload = multer({
   storage,
   fileFilter: function (req, file, cb) {
@@ -133,8 +145,19 @@ const upload = multer({
   },
 });
 
-// ✅ FIX HERE (use uploadDir, not hardcoded string)
-app.use("/uploads", express.static(uploadDir));
+// =======================
+// Multer Error Handler (PDF validation)
+// =======================
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message.includes("PDF")) {
+    return alertAndRedirect(
+      res,
+      err.message || "Invalid file upload",
+      "/student_dashboard.html"
+    );
+  }
+  next(err);
+});
 
 // =======================
 // 8. SOCKET.IO (Realtime)
