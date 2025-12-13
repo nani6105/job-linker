@@ -193,11 +193,9 @@
 
       <td>
         ${
-          a.resume
-            ? `<a href="${a.resume}" target="_blank" class="btn btn-sm btn-primary">
-                 Download
-               </a>`
-            : 'No resume'
+          <a href="${a.resume}?fl_attachment" class="btn btn-sm btn-primary">
+            Download
+          </a>
         }
       </td>
 

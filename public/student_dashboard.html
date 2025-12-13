@@ -294,7 +294,6 @@ async function loadRecommendedJobs() {
           return;
         }
         document.getElementById('myApplications').innerHTML = apps.map(a => {
-          const resumeHref = a.resume || '#';
           const status = a.status || 'pending';
           return `
             <tr>
@@ -303,7 +302,9 @@ async function loadRecommendedJobs() {
               <td>${new Date(a.appliedAt || a.createdAt || Date.now()).toLocaleString()}</td>
               <td>
                 ${a.resume 
-                ? `<a class="btn btn-sm btn-primary" href="${resumeHref}" target="_blank">View</a>` 
+                ? <a href="${a.resume}?fl_attachment" class="btn btn-sm btn-primary">
+                  Download
+                </a>
                 : 'No resume'}
               </td>
               <td><span class="badge ${status==='accepted'?'bg-success':status==='rejected'?'bg-danger':'bg-secondary'} status-badge">${status}</span></td>
