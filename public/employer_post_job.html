@@ -1,0 +1,37 @@
+<form id="postJobForm">
+    <label>Job Title</label>
+    <input type="text" id="jobTitle" name="jobTitle" required>
+
+    <label>Company</label>
+    <input type="text" id="company" name="company" required>
+
+    <label>Course</label>
+    <input type="text" id="course" name="course" required>
+
+    <label>Description</label>
+    <textarea id="description" name="description" required></textarea>
+
+    <button type="submit">Post Job</button>
+</form>
+
+<script>
+document.getElementById("postJobForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const data = {
+        jobTitle: document.getElementById("jobTitle").value,
+        company: document.getElementById("company").value,
+        course: document.getElementById("course").value,
+        description: document.getElementById("description").value
+    };
+
+    const response = await fetch("/post-job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    alert(result.message);
+});
+</script>

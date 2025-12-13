@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Dashboard | Job Linker</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #004aad, #0077ff); color: white; min-height:100vh; }
+    .navbar { background-color: #003580; }
+    .container-card { background: white; color: #222; border-radius: 12px; padding: 22px; margin-top: 28px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+    .btn-main { background-color: #004aad; color: white; font-weight:600; }
+    .btn-main:hover{ background:#003580; }
+    .small-muted { color:#666; }
+    .job-item { margin-bottom: 14px; }
+    .status-badge { font-weight:600; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark px-3">
+    <a class="navbar-brand fw-bold" href="#">Job Linker</a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <div class="text-white me-3">Jobs: <span id="jobCount" class="badge bg-warning text-dark">0</span></div>
+      <a href="home.html" class="btn btn-outline-light me-2"><i class="fa fa-home"></i> Home</a>
+      <a href="student_login.html" class="btn btn-light"><i class="fa fa-sign-out-alt"></i> Logout</a>
+    </div>
+  </nav>
+  
+  <!-- Job Filters -->
+<div class="card p-3 mb-3" style="border-radius:12px;">
+  <h5>Filter Jobs</h5>
+
+  <div class="row">
+
+    <div class="col-md-4">
+      <input id="searchKeyword" class="form-control" placeholder="Search title / company">
+    </div>
+
+    <div class="col-md-4">
+      <select id="filterCourse" class="form-select">
+        <option value="">All Courses</option>
+        <option value="B.Tech">B.Tech</option>
+        <option value="B.Sc">B.Sc</option>
+        <option value="MBA">MBA</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <select id="filterBranch" class="form-select">
+        <option value="">All Branches</option>
+        <option value="CSE">CSE</option>
+        <option value="ECE">ECE</option>
+        <option value="MECH">MECH</option>
+      </select>
+    </div>
+
+    <div class="col-md-1">
+      <button class="btn btn-main w-100" onclick="applyFilters()">Go</button>
+    </div>
+
+  </div>
+</div>
+
+  <div class="container">
+    <div class="container-card">
+      <h4 class="mb-3">Available Jobs</h4>
+      <div id="jobsList"></div>
+    </div>
+
+    <!-- AI Recommended Jobs -->
+<div class="container-card mt-4">
+  <h4 class="mb-3">Recommended For You (AI-Based)</h4>
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered">
+      <thead class="table-dark text-white">
+        <tr>
+          <th>Job</th>
+          <th>Company</th>
+          <th>Match</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="recommendedJobs"></tbody>
+    </table>
+  </div>
+</div>
+
+    <div class="container-card mt-4">
+      <h4 class="mb-3">Your Applications</h4>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead class="table-dark text-white">
+            <tr>
+              <th>Job</th>
+              <th>Company</th>
+              <th>Applied On</th>
+              <th>Resume</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="myApplications"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply Modal -->
+  <div class="modal fade" id="applyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="applyForm" class="modal-content" enctype="multipart/form-data" onsubmit="submitApplication(event)">
+        <div class="modal-header">
+          <h5 class="modal-title">Apply for Job</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="applyJobId" name="jobId">
+          <div class="mb-3">
+            <label class="form-label">Full name</label>
+            <input type="text" id="appFullName" name="fullName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" id="appEmail" name="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="tel" id="appPhone" name="phoneNumber" class="form-control" placeholder="optional">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Resume (PDF)</label>
+            <input type="file" id="appResume" name="resume" accept="application/pdf" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button class="btn btn-main" type="submit">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const socket = io();
+    let me = null;
+    let jobs = [];
+    // ========== FILTER FUNCTIONS ==========
+let allJobs = [];
+
+function applyFilters() {
+  let keyword = document.getElementById("searchKeyword").value.toLowerCase();
+  let course = document.getElementById("filterCourse").value;
+  let branch = document.getElementById("filterBranch").value;
+
+  let filtered = allJobs.filter(job =>
+    (keyword === "" ||
+      job.title.toLowerCase().includes(keyword) ||
+      job.company.toLowerCase().includes(keyword)
+    ) &&
+    (course === "" || job.course === course) &&
+    (branch === "" || job.branch === branch)
+  );
+
+  displayFilteredJobs(filtered);
+}
+
+function displayFilteredJobs(list) {
+  const container = document.getElementById('jobsList');
+  if (!list.length) {
+    container.innerHTML = '<p class="text-muted">No matching jobs found.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(j => `
+    <div class="card job-item">
+      <div class="card-body d-flex justify-content-between align-items-start">
+        <div>
+          <h5 class="mb-1">${escapeHtml(j.title)}</h5>
+          <p class="mb-1 small-muted">${escapeHtml(j.company)} — ${escapeHtml(j.course)} / ${escapeHtml(j.branch || '')}</p>
+          <p class="mb-1">${escapeHtml(j.description)}</p>
+          <small class="text-muted">Posted: ${new Date(j.createdAt).toLocaleString()}</small>
+        </div>
+        <div>
+          <button class="btn btn-main" onclick="openApply('${j._id}','${escapeJs(j.title)}')">Apply</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+
+// ========== LOAD AI RECOMMENDED JOBS ==========
+async function loadRecommendedJobs() {
+  const res = await fetch("/api/student/recommendations", { credentials: "include" });
+  const rec = await res.json();
+
+  document.getElementById("recommendedJobs").innerHTML = rec.map(r => `
+    <tr>
+      <td>${r.job.title}</td>
+      <td>${r.job.company}</td>
+      <td><span class="badge bg-info">${r.score}% match</span></td>
+      <td><button class="btn btn-success btn-sm" onclick="openApply('${r.job._id}')">Apply</button></td>
+    </tr>
+  `).join("");
+}
+
+    // load current user
+    async function loadMe() {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        const data = await res.json();
+        me = data;
+        if (!me || me.role !== 'student') {
+          window.location.href = '/student_login.html';
+          return;
+        }
+        // join socket room to receive job counts
+        socket.emit('join', { role: 'student' });
+      } catch (e) {
+        window.location.href = '/student_login.html';
+      }
+    }
+
+    // load jobs and render
+    async function loadJobs() {
+      const res = await fetch('/api/jobs', { credentials: 'include' });
+      jobs = await res.json();
+      allJobs = jobs;
+      const container = document.getElementById('jobsList');
+      if (!Array.isArray(jobs) || jobs.length === 0) {
+        container.innerHTML = '<p class="text-muted">No jobs available.</p>';
+        document.getElementById('jobCount').textContent = 0;
+        return;
+      }
+      document.getElementById('jobCount').textContent = jobs.length;
+      container.innerHTML = jobs.map(j => {
+        return `
+          <div class="card job-item">
+            <div class="card-body d-flex justify-content-between align-items-start">
+              <div>
+                <h5 class="mb-1">${escapeHtml(j.title)}</h5>
+                <p class="mb-1 small-muted">${escapeHtml(j.company)} — ${escapeHtml(j.course)}</p>
+                <p class="mb-1">${escapeHtml(j.description)}</p>
+                <small class="text-muted">Posted: ${new Date(j.createdAt).toLocaleString()}</small>
+              </div>
+              <div>
+                <button class="btn btn-main" onclick="openApply('${j._id}','${escapeJs(j.title)}')">Apply</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openApply(jobId, title) {
+      document.getElementById('applyJobId').value = jobId;
+      // prefill user info if available
+      if (me) {
+        document.getElementById('appFullName').value = me.fullName || '';
+        document.getElementById('appEmail').value = me.email || '';
+      }
+      const modal = new bootstrap.Modal(document.getElementById('applyModal'));
+      modal.show();
+    }
+
+    async function submitApplication(e) {
+      e.preventDefault();
+      const form = document.getElementById('applyForm');
+      const fd = new FormData(form);
+
+      const res = await fetch('/api/apply', {
+        method: 'POST',
+        body: fd,
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('applyModal'));
+        modal.hide();
+        await loadMyApplications();
+        alert('Application submitted');
+      } else {
+        const txt = await res.text();
+        alert('Apply failed: ' + txt);
+      }
+    }
+
+    // Load student's own applications (requires server endpoint: GET /api/student/applications)
+    async function loadMyApplications() {
+      try {
+        const res = await fetch('/api/student/applications', { credentials: 'include' });
+        if (!res.ok) {
+          document.getElementById('myApplications').innerHTML = '<tr><td colspan="5" class="text-center">Unable to load applications.</td></tr>';
+          return;
+        }
+        const apps = await res.json();
+        if (!Array.isArray(apps) || apps.length === 0) {
+          document.getElementById('myApplications').innerHTML = '<tr><td colspan="5" class="text-center">You have not applied for any job yet.</td></tr>';
+          return;
+        }
+        document.getElementById('myApplications').innerHTML = apps.map(a => {
+          const resumeHref = a.resume ? ('/' + a.resume.replace(/^\/+/, '')) : '#';
+          const status = a.status || 'pending';
+          return `
+            <tr>
+              <td>${escapeHtml(a.jobId?.title || 'Deleted Job')}</td>
+              <td>${escapeHtml(a.jobId?.company || '')}</td>
+              <td>${new Date(a.appliedAt || a.createdAt || Date.now()).toLocaleString()}</td>
+              <td>${ a.resume ? `<a class="btn btn-sm btn-primary" href="${resumeHref}" download>Download</a>` : 'No resume' }</td>
+              <td><span class="badge ${status==='accepted'?'bg-success':status==='rejected'?'bg-danger':'bg-secondary'} status-badge">${status}</span></td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        document.getElementById('myApplications').innerHTML = '<tr><td colspan="5" class="text-center">Error loading applications.</td></tr>';
+      }
+    }
+
+    // socket realtime counts
+    socket.on('jobCounts', (data) => {
+      if (data.totalJobs !== undefined) {
+        const el = document.getElementById('jobCount');
+        if (el) el.textContent = data.totalJobs;
+      }
+    });
+
+    // small helpers
+    function escapeHtml(s){ if(s==null) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+    function escapeJs(s){ return escapeHtml(String(s)).replaceAll("'", "\\'").replaceAll('"','\\"'); }
+
+    // init
+    (async function init(){
+  await loadMe();
+  await loadJobs();
+  await loadMyApplications();
+  await loadRecommendedJobs();   // REQUIRED
+
+  // refresh every 8 seconds
+  setInterval(async ()=>{ 
+    await loadJobs(); 
+    await loadMyApplications(); 
+    await loadRecommendedJobs(); 
+  }, 8000);
+})();
+
+  </script>
+  <style>
+/* FORCE APPLY MODAL INTO LIGHT THEME */
+#applyModal .modal-content {
+    background: #ffffff !important;
+    color: #333 !important;
+    border-radius: 15px !important;
+    padding: 20px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25) !important;
+}
+
+/* Modal Header */
+#applyModal .modal-header {
+    border-bottom: 2px solid #eee !important;
+    padding-bottom: 12px !important;
+}
+
+#applyModal .modal-title {
+    color: #004aad !important;            /* Blue heading */
+    font-weight: 700 !important;
+}
+
+/* Labels */
+#applyModal .form-label {
+    color: #004aad !important;            /* Blue labels */
+    font-weight: 600 !important;
+}
+
+/* Inputs */
+#applyModal .form-control {
+    background: #ffffff !important;
+    color: #222 !important;
+    border: 1px solid #004aad !important; /* Blue border */
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+}
+
+/* Buttons */
+#applyModal .btn-main {
+    background-color: #004aad !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 18px !important;
+}
+
+#applyModal .btn-main:hover {
+    background-color: #003580 !important;
+}
+
+#applyModal .btn-secondary {
+    background: #666 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 18px !important;
+}
+
+</style>
+
+</body>
+</html>

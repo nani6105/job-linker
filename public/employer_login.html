@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employer Portal | Job Linker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(to right, #002b5b, #0056b3);
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .card {
+      width: 400px;
+      background: white;
+      color: #333;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card-header {
+      background-color: #002b5b;
+      color: white;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.5rem;
+      padding: 20px;
+    }
+    .btn-main {
+      background-color: #002b5b;
+      color: white;
+      font-weight: 600;
+    }
+    .btn-main:hover {
+      background-color: #004aad;
+      transform: scale(1.05);
+    }
+    a {
+      color: #002b5b;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="card-header">Employer Portal</div>
+    <div class="card-body">
+      <form id="loginForm"> 
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" placeholder="Enter your email" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn btn-main w-100 mt-3">Login</button>
+      </form>
+      <div class="text-center mt-3">
+        <p>New Employer? <a href="employer_register.html">Register Here</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Ensure this JS is AFTER the form
+    const form = document.getElementById('loginForm');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // stop default form submission
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/api/employer/login', {
+          method: 'POST',
+          body: new URLSearchParams(formData),
+          credentials: 'include' // very important to store session cookie
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          window.location.href = data.redirect; // redirect to dashboard
+        } else {
+          alert(data.message); // show error
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Server error. Try again later.');
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

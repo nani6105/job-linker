@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Contact Messages</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f4f6fb; font-family: "Poppins", sans-serif; }
+    .topbar { background: #002b5b; color: white; padding: 12px 20px; }
+    .card { margin-top: 20px; border-radius: 12px; }
+    #replyBoxArea { display: none; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar d-flex justify-content-between">
+    <h4 class="m-0">Admin – Contact Messages</h4>
+    <a href="admin_dashboard.html" class="btn btn-warning btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="container mt-3">
+
+    <!-- Reply panel -->
+    <div id="replyBoxArea" class="card p-3">
+      <h5>Reply to: <span id="replyToEmail"></span></h5>
+      <textarea id="replyBox" class="form-control" rows="4" placeholder="Type your reply..."></textarea>
+      <button id="sendReplyBtn" class="btn btn-success mt-2">Send Reply</button>
+      <button onclick="closeReplyBox()" class="btn btn-secondary mt-2">Cancel</button>
+    </div>
+
+    <div class="card p-3">
+      <h5 class="mb-3">Messages Received</h5>
+
+      <div class="table-responsive" style="max-height: 450px; overflow:auto;">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Message</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="contactTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMessageId = null;
+
+    async function ensureAdmin() {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      const data = await res.json();
+      if (!data || data.role !== "admin") {
+        alert("Admin access required");
+        window.location.href = "admin_login.html";
+      }
+    }
+
+    async function loadMessages() {
+      const res = await fetch('/api/admin/contact', { credentials: "include" });
+      const list = await res.json();
+
+      document.getElementById("contactTable").innerHTML = list.map(m => `
+        <tr>
+          <td>${m.name}</td>
+          <td>${m.email}</td>
+          <td>${m.message}</td>
+          <td>${new Date(m.createdAt).toLocaleString()}</td>
+          <td>
+            ${m.reply 
+              ? '<span class="badge bg-success">Replied</span>' 
+              : '<span class="badge bg-secondary">Pending</span>'}
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openReplyBox('${m._id}', '${m.email}')">Reply</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMsg('${m._id}')">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openReplyBox(id, email) {
+      currentMessageId = id;
+      document.getElementById("replyToEmail").innerText = email;
+      document.getElementById("replyBoxArea").style.display = "block";
+      document.getElementById("replyBox").value = "";
+    }
+
+    function closeReplyBox() {
+      currentMessageId = null;
+      document.getElementById("replyBoxArea").style.display = "none";
+    }
+
+    document.getElementById("sendReplyBtn").onclick = async function () {
+      const replyText = document.getElementById("replyBox").value.trim();
+      if (!replyText) {
+        alert("Reply cannot be empty");
+        return;
+      }
+
+      const res = await fetch(`/api/admin/contact/reply/${currentMessageId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: replyText }),
+        credentials: "include"
+      });
+
+      const data = await res.json();
+      alert(data.message);
+
+      if (data.success) {
+        closeReplyBox();
+        loadMessages();
+      }
+    };
+
+    async function deleteMsg(id) {
+      if (!confirm("Delete this message?")) return;
+
+      await fetch("/api/admin/contact/" + id, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      loadMessages();
+    }
+
+    (async function init(){
+      await ensureAdmin();
+      await loadMessages();
+    })();
+  </script>
+
+</body>
+</html>
