@@ -20,7 +20,7 @@ console.log("ENV CHECK:", {
 // ===================================================
 
 const express = require('express');
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -84,8 +84,8 @@ const alertAndRedirect = (res, message, redirectUrl) => {
 // =======================
 // 5. Middleware
 // =======================
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Static public folder
 app.use(express.static(path.join(__dirname, 'public')));
@@ -439,7 +439,6 @@ app.delete("/api/jobs/:id", async (req, res) => {
 app.post(
   "/api/apply",
 
-  // ✅ AUTH CHECK FIRST (NO UPLOAD YET)
   (req, res, next) => {
     if (!req.session.user || req.session.user.role !== "student") {
       return alertAndRedirect(
@@ -451,10 +450,11 @@ app.post(
     next();
   },
 
-  // ✅ THEN MULTER (Cloudinary upload)
   upload.single("resume"),
 
   async (req, res) => {
+    console.log("FILE OBJECT:", req.file);
+
     const { jobId, fullName, phoneNumber } = req.body;
 
     if (!req.file) {
@@ -466,26 +466,14 @@ app.post(
     }
 
     try {
-      const application = await Application.create({
+      await Application.create({
         jobId,
         studentName: fullName,
-        studentEmail: req.session.user.email, // ✅ FIXED (SECURE)
+        studentEmail: req.session.user.email,
         phoneNumber,
-        resume: req.file.secure_url, // ✅ Cloudinary URL
+        resume: req.file.path,   // ✅ FIXED
         status: "pending",
       });
-
-      const job = await Job.findById(jobId);
-
-      if (job) {
-        io.to(`employer_${String(job.employerId)}`).emit("applicationUpdated", {
-          applicationId: application._id,
-          jobId,
-          status: "pending",
-          studentName: fullName,
-          studentEmail: req.session.user.email,
-        });
-      }
 
       alertAndRedirect(
         res,

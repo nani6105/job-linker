@@ -110,35 +110,48 @@
   <!-- Apply Modal -->
   <div class="modal fade" id="applyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-      <form id="applyForm" class="modal-content" enctype="multipart/form-data" onsubmit="submitApplication(event)">
-        <div class="modal-header">
-          <h5 class="modal-title">Apply for Job</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="applyJobId" name="jobId">
-          <div class="mb-3">
-            <label class="form-label">Full name</label>
-            <input type="text" id="appFullName" name="fullName" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" id="appEmail" name="email" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Phone</label>
-            <input type="tel" id="appPhone" name="phoneNumber" class="form-control" placeholder="optional">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Resume (PDF)</label>
-            <input type="file" id="appResume" name="resume" accept="application/pdf" class="form-control" required>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
-          <button class="btn btn-main" type="submit">Submit Application</button>
-        </div>
-      </form>
+      <form action="/api/apply"
+      method="POST"
+      enctype="multipart/form-data"
+      class="modal-content">
+
+  <div class="modal-header">
+    <h5 class="modal-title">Apply for Job</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  </div>
+
+  <div class="modal-body">
+
+    <input type="hidden" id="applyJobId" name="jobId">
+
+    <div class="mb-3">
+      <label class="form-label">Full name</label>
+      <input type="text" id="appFullName" name="fullName" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Phone</label>
+      <input type="tel" id="appPhone" name="phoneNumber" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Resume (PDF)</label>
+      <input type="file"
+             id="appResume"
+             name="resume"
+             accept="application/pdf"
+             class="form-control"
+             required>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+    <button class="btn btn-main" type="submit">Submit Application</button>
+  </div>
+</form>
+
     </div>
   </div>
 
@@ -262,32 +275,9 @@ async function loadRecommendedJobs() {
       // prefill user info if available
       if (me) {
         document.getElementById('appFullName').value = me.fullName || '';
-        document.getElementById('appEmail').value = me.email || '';
       }
       const modal = new bootstrap.Modal(document.getElementById('applyModal'));
       modal.show();
-    }
-
-    async function submitApplication(e) {
-      e.preventDefault();
-      const form = document.getElementById('applyForm');
-      const fd = new FormData(form);
-
-      const res = await fetch('/api/apply', {
-        method: 'POST',
-        body: fd,
-        credentials: 'include'
-      });
-
-      if (res.ok) {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('applyModal'));
-        modal.hide();
-        await loadMyApplications();
-        alert('Application submitted');
-      } else {
-        const txt = await res.text();
-        alert('Apply failed: ' + txt);
-      }
     }
 
     // Load student's own applications (requires server endpoint: GET /api/student/applications)
@@ -304,14 +294,18 @@ async function loadRecommendedJobs() {
           return;
         }
         document.getElementById('myApplications').innerHTML = apps.map(a => {
-          const resumeHref = a.resume ? ('/' + a.resume.replace(/^\/+/, '')) : '#';
+          const resumeHref = a.resume || '#';
           const status = a.status || 'pending';
           return `
             <tr>
               <td>${escapeHtml(a.jobId?.title || 'Deleted Job')}</td>
               <td>${escapeHtml(a.jobId?.company || '')}</td>
               <td>${new Date(a.appliedAt || a.createdAt || Date.now()).toLocaleString()}</td>
-              <td>${ a.resume ? `<a class="btn btn-sm btn-primary" href="${resumeHref}" download>Download</a>` : 'No resume' }</td>
+              <td>
+                ${a.resume 
+                ? `<a class="btn btn-sm btn-primary" href="${resumeHref}" target="_blank">View</a>` 
+                : 'No resume'}
+              </td>
               <td><span class="badge ${status==='accepted'?'bg-success':status==='rejected'?'bg-danger':'bg-secondary'} status-badge">${status}</span></td>
             </tr>
           `;
