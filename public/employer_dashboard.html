@@ -113,7 +113,7 @@
 
     async function loadJobs() {
       try {
-        const res = await fetch('/api/jobs', { credentials: 'include' });
+        const res = await fetch('/api/employer/jobs', { credentials: 'include' });
         jobs = await res.json();
         const container = document.getElementById('jobsList');
         if (!Array.isArray(jobs) || jobs.length === 0) {
@@ -144,7 +144,12 @@
       e.preventDefault();
       const form = document.getElementById('jobForm');
       const formData = new FormData(form);
-      const payload = Object.fromEntries(formData.entries());
+      const payload = {
+        title: formData.get("jobTitle"),
+        company: formData.get("companyName"),
+        course: formData.get("course"),
+        description: formData.get("jobDescription")
+      };
 
       const res = await fetch('/api/jobs', {
         method: 'POST',

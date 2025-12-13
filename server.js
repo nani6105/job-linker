@@ -2,6 +2,15 @@
 // server.js – FINAL VERSION (100% compatible with ALL your frontend files)
 // Folder Structure: (A) - models/, public/, uploads/
 // ===================================================
+// ===================================================
+require("dotenv").config();
+
+console.log("ENV CHECK:", {
+  mongo: !!process.env.MONGODB_URI,
+  email: !!process.env.EMAIL_USER,
+  session: !!process.env.SESSION_SECRET,
+});
+// ===================================================
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -28,10 +37,11 @@ const Contact = require('./models/Contact.js');
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "23a51a05k3@gmail.com",
-    pass: "usjp tetp fviy eawd"
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
+
 
 // =======================
 // 2. App Initialization
@@ -44,8 +54,7 @@ const PORT = process.env.PORT || 3000;
 // =======================
 // 3. Database Connection
 // =======================
-const MONGODB_URI =
-  "mongodb+srv://nanialthi7791_db_user:akkianki%40123@cluster0.fkioc5b.mongodb.net/joblinkerDB?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB Connected Successfully'))
@@ -80,14 +89,14 @@ app.get('/', (req, res) =>
 // =======================
 app.use(
   session({
-    secret: "super_strong_secret_key_for_sessions",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 2, // 2 hours
-    },
+      maxAge: 1000 * 60 * 60 * 2,
+  },
   })
 );
 
@@ -313,6 +322,14 @@ app.post("/api/jobs", async (req, res) => {
 // GET ALL JOBS (Student + Employer)
 app.get("/api/jobs", async (req, res) => {
   const jobs = await Job.find().sort({ createdAt: -1 });
+  res.json(jobs);
+});
+app.get("/api/employer/jobs", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "employer")
+    return res.status(401).json({ message: "Unauthorized" });
+
+  const jobs = await Job.find({ employerId: req.session.user._id })
+                        .sort({ createdAt: -1 });
   res.json(jobs);
 });
 
