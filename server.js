@@ -95,25 +95,25 @@ app.get('/', (req, res) =>
 // =======================
 // 6. Session Configuration
 // =======================
-const MongoStore = require("connect-mongo");
+const MongoStore = require('connect-mongo').default;
 
 app.use(
   session({
-    name: "joblinker.sid",
+    name: 'joblinker.sid',
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
 
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
-      collectionName: "sessions",
+      collectionName: 'sessions',
+      ttl: 14 * 24 * 60 * 60, // 14 days
     }),
 
     cookie: {
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
     },
   })
 );
