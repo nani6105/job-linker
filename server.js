@@ -110,7 +110,7 @@ app.use(
     saveUninitialized: false,
 
     store: MongoStore.create({
-      clientPromise: mongoose.connection.getClient(),
+      client: mongoose.connection.getClient(),
       collectionName: 'sessions',
     }),
 
