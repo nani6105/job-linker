@@ -484,7 +484,7 @@ app.post(
         studentName: fullName,
         studentEmail: req.session.user.email,
         phoneNumber,
-        resume: req.file.path.replace("/upload/", "/upload/fl_inline/"),
+        resume: req.file.path,
         status: "pending",
       });
 
