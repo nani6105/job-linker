@@ -29,7 +29,6 @@ const multer = require('multer');
 const http = require('http');
 const { Server } = require("socket.io");
 const nodemailer = require("nodemailer");
-
 // =======================
 // 1. Import Models
 // =======================
@@ -96,20 +95,29 @@ app.get('/', (req, res) =>
 // =======================
 // 6. Session Configuration
 // =======================
+const MongoStore = require("connect-mongo");
+app.set("trust proxy", 1);
 app.use(
   session({
+    name: "joblinker.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // 🔥 REQUIRED for Render
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      collectionName: "sessions",
+      ttl: 60 * 60 * 2, // 2 hours
+    }),
+    proxy: true,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: true,          // REQUIRED on Render
+      sameSite: "none",      // REQUIRED for cross-site
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 2,
     },
   })
 );
+
 
 
 // =======================
