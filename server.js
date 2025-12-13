@@ -94,11 +94,13 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true, // 🔥 REQUIRED for Render
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true,        // Render is HTTPS
+      sameSite: "none",    // 🔥 REQUIRED
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 2,
-  },
+    },
   })
 );
 
@@ -260,20 +262,6 @@ app.post("/api/employer/login", async (req, res) => {
 });
 
 // ----------------- Admin Login (JSON) -----------------
-app.get("/create-admin", async (req, res) => {
-  const bcrypt = require("bcryptjs");
-
-  const hashed = await bcrypt.hash("joblinker234", 10);
-
-  await User.create({
-    email: "23a51a05k3@gmail.com",
-    password: hashed,
-    role: "admin",
-  });
-
-  res.send("Admin created");
-});
-
 app.post("/api/admin/login", async (req, res) => {
   console.log("ADMIN LOGIN BODY:", req.body);
   const { email, password } = req.body;
@@ -415,10 +403,24 @@ app.delete("/api/jobs/:id", async (req, res) => {
 // 11. STUDENT JOB APPLY
 // ===================================================
 app.post("/api/apply", upload.single("resume"), async (req, res) => {
+
+  if (!req.session.user || req.session.user.role !== "student") {
+    return alertAndRedirect(
+      res,
+      "Please login as student first.",
+      "/student_login.html"
+    );
+  }
+
   const { jobId, fullName, email, phoneNumber } = req.body;
 
-  if (!req.file)
-    return alertAndRedirect(res, "Upload a PDF resume!", "/student_dashboard.html");
+  if (!req.file) {
+    return alertAndRedirect(
+      res,
+      "Upload a PDF resume!",
+      "/student_dashboard.html"
+    );
+  }
 
   try {
     const application = await Application.create({
@@ -437,15 +439,14 @@ app.post("/api/apply", upload.single("resume"), async (req, res) => {
         applicationId: application._id,
         jobId,
         status: "pending",
-        studentName: application.studentName,
-        studentEmail: application.studentEmail,
+        studentName: fullName,
+        studentEmail: email,
       });
-
-      emitCounts(job.employerId);
     }
 
     alertAndRedirect(res, "Application submitted!", "/student_dashboard.html");
   } catch (err) {
+    console.error("Apply error:", err);
     alertAndRedirect(res, "Failed to submit application.", "/student_dashboard.html");
   }
 });
