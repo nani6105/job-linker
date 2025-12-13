@@ -95,28 +95,28 @@ app.get('/', (req, res) =>
 // =======================
 // 6. Session Configuration
 // =======================
-const MongoStore = require("connect-mongo");
-app.set("trust proxy", 1);
+const MongoStore = require("connect-mongo")(session);
+
 app.use(
   session({
     name: "joblinker.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
+    store: new MongoStore({
+      mongoUrl: process.env.MONGO_URI,
       collectionName: "sessions",
-      ttl: 60 * 60 * 2, // 2 hours
+      ttl: 24 * 60 * 60, // 1 day
     }),
-    proxy: true,
     cookie: {
-      secure: true,          // REQUIRED on Render
-      sameSite: "none",      // REQUIRED for cross-site
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 2,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
+
 
 
 
