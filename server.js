@@ -64,9 +64,14 @@ const PORT = process.env.PORT || 3000;
 console.log("RAW MONGO URI >>>", process.env.MONGODB_URI);
 console.log("URI LENGTH >>>", process.env.MONGODB_URI?.length);
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ MongoDB error:", err.message));
+/* connect mongoose FIRST */
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // =======================
 // 4. Helper Function
@@ -105,9 +110,8 @@ app.use(
     saveUninitialized: false,
 
     store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI,
+      clientPromise: mongoose.connection.getClient(),
       collectionName: 'sessions',
-      ttl: 14 * 24 * 60 * 60, // 14 days
     }),
 
     cookie: {
@@ -117,6 +121,7 @@ app.use(
     },
   })
 );
+
 
 // =======================
 // 7. Multer (Resume Upload)
