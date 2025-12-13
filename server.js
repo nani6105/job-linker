@@ -260,6 +260,20 @@ app.post("/api/employer/login", async (req, res) => {
 });
 
 // ----------------- Admin Login (JSON) -----------------
+app.get("/create-admin", async (req, res) => {
+  const bcrypt = require("bcryptjs");
+
+  const hashed = await bcrypt.hash("joblinker234", 10);
+
+  await User.create({
+    email: "23a51a05k3@gmail.com",
+    password: hashed,
+    role: "admin",
+  });
+
+  res.send("Admin created");
+});
+
 app.post("/api/admin/login", async (req, res) => {
   console.log("ADMIN LOGIN BODY:", req.body);
   const { email, password } = req.body;
