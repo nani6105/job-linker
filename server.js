@@ -10,6 +10,7 @@ console.log("Cloudinary ENV:", {
   key: !!process.env.CLOUDINARY_API_KEY,
   secret: !!process.env.CLOUDINARY_API_SECRET,
 });
+console.log("PDF URL:", req.file.path);
 
 
 console.log("ENV CHECK:", {
@@ -471,7 +472,7 @@ app.post(
         studentName: fullName,
         studentEmail: req.session.user.email,
         phoneNumber,
-        resume: req.file.path,   // ✅ FIXED
+        resume: req.file.path.replace("/upload/", "/upload/fl_inline/"),
         status: "pending",
       });
 
