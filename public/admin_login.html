@@ -69,36 +69,38 @@
     }
 
     #homeBtn {
-  position: fixed;
-  top: 20px;
-  right: 70px; /* slightly left of dark mode button */
-  padding: 10px 14px;
-  border-radius: 50%;
-  background-color: #ffd700;
-  color: black;
-  font-size: 18px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-  transition: 0.3s;
-}
+      position: fixed;
+      top: 20px;
+      right: 70px;
+      padding: 10px 14px;
+      border-radius: 50%;
+      background-color: #ffd700;
+      color: black;
+      font-size: 18px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      transition: 0.3s;
+    }
 
-#homeBtn:hover {
-  background-color: #ffc107;
-  transform: scale(1.1);
-}
-
+    #homeBtn:hover {
+      background-color: #ffc107;
+      transform: scale(1.1);
+    }
   </style>
 </head>
-<body>
-<a href="home.html" id="homeBtn" class="btn btn-warning">
-  <i class="fas fa-home"></i>
-</a>
 
+<body>
+  <!-- Home Button -->
+  <a href="home.html" id="homeBtn" class="btn btn-warning">
+    <i class="fas fa-home"></i>
+  </a>
+
+  <!-- Dark Mode Toggle -->
   <button id="darkToggle"><i class="fas fa-moon"></i></button>
 
+  <!-- Login Card -->
   <div class="login-container">
     <h2>Admin Login</h2>
 
-    <!-- FIXED: We do NOT use HTML form POST anymore -->
     <form id="adminLoginForm">
       <div class="mb-3">
         <label class="form-label">Email</label>
@@ -116,34 +118,45 @@
 
   <script>
     // DARK MODE TOGGLE
-    const toggle = document.getElementById('darkToggle');
-    toggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      const icon = toggle.querySelector('i');
-      icon.classList.toggle('fa-moon');
-      icon.classList.toggle('fa-sun');
+    const toggle = document.getElementById("darkToggle");
+    toggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const icon = toggle.querySelector("i");
+      icon.classList.toggle("fa-moon");
+      icon.classList.toggle("fa-sun");
     });
 
-    // FIX: REAL LOGIN HANDLER
-    document.getElementById("adminLoginForm").addEventListener("submit", async(e) => {
+    // ✅ OPTION B: JSON LOGIN HANDLER
+    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",  // 🔥 REQUIRED TO SAVE SESSION
-        body: JSON.stringify({ email, password })
-      });
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include", // 🔥 REQUIRED for sessions
+          body: JSON.stringify({ email, password })
+        });
 
-      const text = await res.text();
+        const data = await res.json();
 
-      // Server returns JS <script> — we must execute it
-      document.write(text);
+        if (!data.success) {
+          alert(data.message || "Invalid credentials");
+          return;
+        }
+
+        // ✅ Redirect on success
+        window.location.href = data.redirect;
+
+      } catch (err) {
+        alert("Server error. Please try again.");
+      }
     });
   </script>
-
 </body>
 </html>

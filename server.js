@@ -47,6 +47,7 @@ const transporter = nodemailer.createTransport({
 // 2. App Initialization
 // =======================
 const app = express();
+app.set("trust proxy", 1); 
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
@@ -258,17 +259,48 @@ app.post("/api/employer/login", async (req, res) => {
   }
 });
 
-// ----------------- Admin Login -----------------
-app.get("/create-admin", async (req, res) => {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+// ----------------- Admin Login (JSON) -----------------
+app.post("/api/admin/login", async (req, res) => {
+  console.log("ADMIN LOGIN BODY:", req.body);
+  const { email, password } = req.body;
 
-  await User.create({
-    email: "admin@gmail.com",
-    password: hashedPassword,
-    role: "admin",
-  });
+  try {
+    const user = await User.findOne({ email, role: "admin" });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
 
-  res.send("Admin created");
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    req.session.user = {
+      _id: user._id,
+      email: user.email,
+      role: "admin",
+    };
+
+    req.session.save(() => {
+      res.json({
+        success: true,
+        redirect: "/admin_dashboard.html",
+      });
+    });
+
+  } catch (err) {
+    console.error("Admin login error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
 });
 
 
