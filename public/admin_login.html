@@ -117,46 +117,40 @@
   </div>
 
   <script>
-    // DARK MODE TOGGLE
-    const toggle = document.getElementById("darkToggle");
-    toggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      const icon = toggle.querySelector("i");
-      icon.classList.toggle("fa-moon");
-      icon.classList.toggle("fa-sun");
+  // DARK MODE
+  const toggle = document.getElementById('darkToggle');
+  toggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const icon = toggle.querySelector('i');
+    icon.classList.toggle('fa-moon');
+    icon.classList.toggle('fa-sun');
+  });
+
+  // ✅ OPTION B LOGIN HANDLER (JSON BASED)
+  document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password })
     });
 
-    // ✅ OPTION B: JSON LOGIN HANDLER
-    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const data = await res.json();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+    if (!data.success) {
+      alert(data.message);
+      return;
+    }
 
-      try {
-        const res = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "include", // 🔥 REQUIRED for sessions
-          body: JSON.stringify({ email, password })
-        });
+    // ✅ SUCCESS
+    window.location.href = data.redirect;
+  });
+</script>
 
-        const data = await res.json();
-
-        if (!data.success) {
-          alert(data.message || "Invalid credentials");
-          return;
-        }
-
-        // ✅ Redirect on success
-        window.location.href = data.redirect;
-
-      } catch (err) {
-        alert("Server error. Please try again.");
-      }
-    });
-  </script>
 </body>
 </html>
