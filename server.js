@@ -436,54 +436,74 @@ app.delete("/api/jobs/:id", async (req, res) => {
 // ===================================================
 // 11. STUDENT JOB APPLY
 // ===================================================
-app.post("/api/apply", upload.single("resume"), async (req, res) => {
+app.post(
+  "/api/apply",
 
-  if (!req.session.user || req.session.user.role !== "student") {
-    return alertAndRedirect(
-      res,
-      "Please login as student first.",
-      "/student_login.html"
-    );
-  }
+  // ✅ AUTH CHECK FIRST (NO UPLOAD YET)
+  (req, res, next) => {
+    if (!req.session.user || req.session.user.role !== "student") {
+      return alertAndRedirect(
+        res,
+        "Please login as student first.",
+        "/student_login.html"
+      );
+    }
+    next();
+  },
 
-  const { jobId, fullName, email, phoneNumber } = req.body;
+  // ✅ THEN MULTER (Cloudinary upload)
+  upload.single("resume"),
 
-  if (!req.file) {
-    return alertAndRedirect(
-      res,
-      "Upload a PDF resume!",
-      "/student_dashboard.html"
-    );
-  }
+  async (req, res) => {
+    const { jobId, fullName, phoneNumber } = req.body;
 
-  try {
-    const application = await Application.create({
-      jobId,
-      studentName: fullName,
-      studentEmail: email,
-      phoneNumber,
-      resume: req.file.path,
-      status: "pending",
-    });
-
-    const job = await Job.findById(jobId);
-
-    if (job) {
-      io.to(`employer_${String(job.employerId)}`).emit("applicationUpdated", {
-        applicationId: application._id,
-        jobId,
-        status: "pending",
-        studentName: fullName,
-        studentEmail: email,
-      });
+    if (!req.file) {
+      return alertAndRedirect(
+        res,
+        "Upload a PDF resume!",
+        "/student_dashboard.html"
+      );
     }
 
-    alertAndRedirect(res, "Application submitted!", "/student_dashboard.html");
-  } catch (err) {
-    console.error("Apply error:", err);
-    alertAndRedirect(res, "Failed to submit application.", "/student_dashboard.html");
+    try {
+      const application = await Application.create({
+        jobId,
+        studentName: fullName,
+        studentEmail: req.session.user.email, // ✅ FIXED (SECURE)
+        phoneNumber,
+        resume: req.file.secure_url, // ✅ Cloudinary URL
+        status: "pending",
+      });
+
+      const job = await Job.findById(jobId);
+
+      if (job) {
+        io.to(`employer_${String(job.employerId)}`).emit("applicationUpdated", {
+          applicationId: application._id,
+          jobId,
+          status: "pending",
+          studentName: fullName,
+          studentEmail: req.session.user.email,
+        });
+      }
+
+      alertAndRedirect(
+        res,
+        "Application submitted successfully!",
+        "/student_dashboard.html"
+      );
+
+    } catch (err) {
+      console.error("Apply error:", err);
+      alertAndRedirect(
+        res,
+        "Failed to submit application.",
+        "/student_dashboard.html"
+      );
+    }
   }
-});
+);
+
 
 // ===================================================
 // 12. STUDENT – View Their Applications
