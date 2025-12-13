@@ -54,13 +54,12 @@ const PORT = process.env.PORT || 3000;
 // =======================
 // 3. Database Connection
 // =======================
-mongoose.connect(process.env.MONGODB_URI, {
-  authSource: "admin",
-  authMechanism: "SCRAM-SHA-256",
-})
-.then(() => console.log("MongoDB Connected Successfully"))
-.catch(err => console.error("MongoDB connection error:", err));
+console.log("RAW MONGO URI >>>", process.env.MONGODB_URI);
+console.log("URI LENGTH >>>", process.env.MONGODB_URI?.length);
 
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ MongoDB error:", err.message));
 
 // =======================
 // 4. Helper Function
