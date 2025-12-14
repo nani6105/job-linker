@@ -482,10 +482,9 @@ app.post(
         studentName: fullName,
         studentEmail: req.session.user.email,
         phoneNumber,
-        resume: req.file.secure_url,
+        resume: req.file.path,   // ✅ MUST EXIST
         status: "pending",
       });
-
       alertAndRedirect(
         res,
         "Application submitted successfully!",

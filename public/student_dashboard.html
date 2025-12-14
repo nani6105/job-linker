@@ -301,15 +301,9 @@ async function loadRecommendedJobs() {
               <td>${escapeHtml(a.jobId?.company || '')}</td>
               <td>${new Date(a.appliedAt || a.createdAt || Date.now()).toLocaleString()}</td>
               <td>
-                ${
-                  a.resume
-                  ? `<a href="${a.resume}?fl_attachment=true"
-                  class="btn btn-sm btn-primary"
-                  download>
-                  Download
-                  </a>`
-                  : 'No resume'
-                }
+                ${a.resume && a.resume.trim() !== ""
+                  ? `<a href="${a.resume.replace('/upload/', '/upload/fl_attachment/')}" target="_blank">Download</a>`
+                  : "No resume"}
               </td>
               <td><span class="badge ${status==='accepted'?'bg-success':status==='rejected'?'bg-danger':'bg-secondary'} status-badge">${status}</span></td>
             </tr>
