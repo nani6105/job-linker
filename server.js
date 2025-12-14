@@ -47,6 +47,13 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+transporter.verify((err, success) => {
+  if (err) {
+    console.error("❌ EMAIL ERROR:", err);
+  } else {
+    console.log("✅ Email server ready");
+  }
+});
 
 
 // =======================
@@ -707,7 +714,7 @@ app.post("/api/admin/contact/reply/:id", ensureAdmin, async (req, res)=> {
   // Send email back to user
   try {
     await transporter.sendMail({
-      from: `"Job Linker Admin" <23a51a05k3@gmail.com>`,
+      from: process.env.EMAIL_USER,
       to: msg.email,
       subject: "Reply from Job Linker Admin",
       html: `
