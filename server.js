@@ -41,12 +41,19 @@ const Contact = require('./models/Contact.js');
 // EMAIL TRANSPORTER (Admin Reply System)
 // ===================================================
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // required for 587
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS, // Gmail App Password ONLY
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 10000,
 });
+
 transporter.verify((err, success) => {
   if (err) {
     console.error("❌ EMAIL ERROR:", err);
