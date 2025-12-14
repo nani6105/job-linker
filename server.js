@@ -140,7 +140,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "joblinker_resumes",
-    resource_type: "raw", // REQUIRED for PDFs
+    resource_type: "image", // REQUIRED for PDFs
     format: "pdf",
     public_id: (req, file) =>
       Date.now() + "-" + file.originalname.replace(/\s+/g, "_"),
@@ -465,9 +465,7 @@ app.post(
 
   async (req, res) => {
     console.log("FILE OBJECT:", req.file);
-    console.log("PDF URL:", req.file.path);
-
-
+    console.log("SECURE PDF URL:", req.file.secure_url);
     const { jobId, fullName, phoneNumber } = req.body;
 
     if (!req.file) {
@@ -484,7 +482,7 @@ app.post(
         studentName: fullName,
         studentEmail: req.session.user.email,
         phoneNumber,
-        resume: req.file.path,
+        resume: req.file.secure_url,
         status: "pending",
       });
 
